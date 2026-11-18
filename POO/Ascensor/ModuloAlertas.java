@@ -1,36 +1,41 @@
 package Ascensor;
 
+import java.time.LocalTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-/** Guarda el historial de eventos y muestra las alertas por falla. */
+/** Guarda el historial de actividad y avisa cuando hay fallas. */
 public class ModuloAlertas {
-    private static final String PREFIJO_FALLA = "[FALLA] ";
-    private static final String PREFIJO_ACTIVIDAD = "[ACTIVIDAD] ";
-
     private final List<String> historial = new ArrayList<>();
+    private final long inicio = System.currentTimeMillis();
 
+    /** Registra una falla y la muestra de inmediato. */
     public void reportarFalla(String detalle) {
-        historial.add(PREFIJO_FALLA + detalle);
+        historial.add(conHora("FALLA: " + detalle));
         mostrarAlerta();
     }
 
+    /** Registra un evento normal (para análisis de mantenimiento). */
     public void registrarActividad(String evento) {
-        historial.add(PREFIJO_ACTIVIDAD + evento);
+        historial.add(conHora(evento));
     }
 
-    /** Muestra la última falla registrada. */
+    /** Muestra por consola el último registro. */
     public void mostrarAlerta() {
-        for (int i = historial.size() - 1; i >= 0; i--) {
-            if (historial.get(i).startsWith(PREFIJO_FALLA)) {
-                System.out.println("!!! ALERTA: " + historial.get(i).substring(PREFIJO_FALLA.length()));
-                return;
-            }
+        if (!historial.isEmpty()) {
+            System.out.println("[ALERTA] " + historial.get(historial.size() - 1));
         }
     }
 
+    public long segundosFuncionando() {
+        return (System.currentTimeMillis() - inicio) / 1000;
+    }
+
     public List<String> getHistorial() {
-        return Collections.unmodifiableList(historial);
+        return historial;
+    }
+
+    private String conHora(String texto) {
+        return "[" + LocalTime.now().withNano(0) + "] " + texto;
     }
 }

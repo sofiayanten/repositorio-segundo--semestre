@@ -6,7 +6,6 @@ public class Piso {
     private final BotonPiso botonSube;
     private final BotonPiso botonBaja;
     private final PuertaPiso puerta;
-    private ControlAscensor control;
 
     public Piso(int ubicacion) {
         this.ubicacion = ubicacion;
@@ -15,25 +14,21 @@ public class Piso {
         this.puerta = new PuertaPiso(ubicacion);
     }
 
-    /** Lo llama ControlAscensor al recibir los pisos. */
-    public void setControl(ControlAscensor control) {
-        this.control = control;
+    /** Alguien pidió el ascensor desde este piso. */
+    public void solicitar(Direccion dir) {
+        if (dir == Direccion.SUBE) {
+            botonSube.presionar();
+        } else {
+            botonBaja.presionar();
+        }
     }
 
-    /** Una persona pide el ascensor en este piso. */
-    public void solicitar(Direccion dir) {
-        if (dir == Direccion.DETENIDO) {
-            throw new IllegalArgumentException("El llamado debe ser SUBE o BAJA");
-        }
-        if (control == null) {
-            throw new IllegalStateException("El piso " + ubicacion + " no esta conectado a un control");
-        }
-        BotonPiso boton = (dir == Direccion.SUBE) ? botonSube : botonBaja;
-        if (boton.estaIluminado()) {
-            return;   // el llamado ya fue registrado
-        }
-        boton.presionar();
-        control.recibirSolicitud(ubicacion, dir);
+    /** El ascensor llegó: se apagan las luces y la puerta se abre y se cierra. */
+    public void llegoAscensor() {
+        puerta.abrir();
+        botonSube.apagarIndicador();
+        botonBaja.apagarIndicador();
+        puerta.cerrar();
     }
 
     public int getUbicacion() {

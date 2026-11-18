@@ -1,48 +1,49 @@
 package Ascensor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-/** Demostración: llamados desde pisos, pasajeros, LOOK y una falla de puerta. */
+/** Demostración del sistema: solicitudes, movimiento, obstáculo y falla. */
 public class Main {
     public static void main(String[] args) {
-        int numeroPisos = 6;
+        ControlAscensor control = new ControlAscensor(2, 6); // 2 ascensores, pisos 0 a 5
 
-        List<Ascensor> ascensores = List.of(new Ascensor(1, numeroPisos), new Ascensor(2, numeroPisos));
-        List<Piso> pisos = new ArrayList<>();
-        for (int i = 1; i <= numeroPisos; i++) {
-            pisos.add(new Piso(i));
+        System.out.println("=== 1. Solicitudes ===");
+        control.recibirSolicitud(3, Direccion.SUBE);   // alguien en el piso 3 quiere subir
+        control.recibirSolicitud(5, Direccion.BAJA);   // alguien en el piso 5 quiere bajar
+        control.getAscensor(0).presionarBoton(1);      // un pasajero dentro del ascensor 0 va al piso 1
+
+        System.out.println("\n=== 2. Movimiento ===");
+        for (int t = 1; t <= 14; t++) {
+            control.paso();
+            mostrar(control, t);
         }
-        ControlAscensor control = new ControlAscensor(ascensores, pisos);
 
-        System.out.println("=== 1. Llamados desde los pisos ===");
-        pisos.get(3).solicitar(Direccion.SUBE);   // piso 4
-        pisos.get(1).solicitar(Direccion.BAJA);   // piso 2
-        correr(control, 8);
+        System.out.println("\n=== 3. Obstaculo en la puerta ===");
+        PuertaAscensor puerta = control.getAscensor(0).getPuerta();
+        puerta.abrir();
+        puerta.getSensor().setObstaculo(true);
+        puerta.cierreAutomatico();
+        System.out.println("Puerta abierta con obstaculo? " + puerta.estaAbierta());
+        puerta.getSensor().setObstaculo(false);
+        puerta.cierreAutomatico();
+        System.out.println("Puerta abierta sin obstaculo? " + puerta.estaAbierta());
 
-        System.out.println("\n=== 2. Un pasajero entra y marca el piso 6 ===");
-        Ascensor a1 = ascensores.get(0);
-        a1.presionarBoton(6);
-        correr(control, 8);
+        System.out.println("\n=== 4. Falla de un sensor ===");
+        control.getAscensor(1).getPuerta().getSensor().setFalla(true);
+        control.paso();
+        mostrar(control, 15);
 
-        System.out.println("\n=== 3. Falla: un obstaculo bloquea la puerta del ascensor 1 ===");
-        a1.getPuerta().getSensor().setObstaculo(true);
-        pisos.get(5).solicitar(Direccion.BAJA);   // piso 6, donde esta el ascensor 1
-        correr(control, 6);
-
-        System.out.println("\n=== 4. Con el ascensor 1 fuera de servicio, responde el 2 ===");
-        pisos.get(0).solicitar(Direccion.SUBE);   // piso 1
-        correr(control, 4);
-
-        System.out.println("\n=== Historial ===");
-        control.getAlertas().getHistorial().forEach(e -> System.out.println("   " + e));
+        System.out.println("\n=== 5. Historial ===");
+        for (String registro : control.getAlertas().getHistorial()) {
+            System.out.println(registro);
+        }
     }
 
-    private static void correr(ControlAscensor control, int pasos) {
-        for (int i = 1; i <= pasos; i++) {
-            System.out.println("-- paso " + i);
-            control.paso();
+    private static void mostrar(ControlAscensor c, int t) {
+        StringBuilder sb = new StringBuilder("t=" + t + " | ");
+        for (int i = 0; i < c.getTotalAscensores(); i++) {
+            Ascensor a = c.getAscensor(i);
+            sb.append("Asc").append(i).append(": piso ").append(a.getPisoActual())
+              .append(" ").append(a.getEstado()).append("   ");
         }
-        control.mostrarEstado();
+        System.out.println(sb);
     }
 }

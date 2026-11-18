@@ -1,9 +1,9 @@
 package Ascensor;
 
-/** Clase abstracta: toda puerta tiene un estado (abierta/cerrada) y un sensor. */
+/** Clase abstracta: lo común a las puertas de ascensor y de piso. */
 public abstract class Puerta {
     protected boolean abierta;
-    private final SensorPuerta sensor = new SensorPuerta();   // composición
+    private final SensorPuerta sensor = new SensorPuerta(); // composición: la puerta "tiene" su sensor
 
     public abstract void abrir();
 

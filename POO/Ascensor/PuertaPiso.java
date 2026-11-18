@@ -1,6 +1,6 @@
 package Ascensor;
 
-/** Puerta del piso: se abre y se cierra sincronizada con la puerta del ascensor. */
+/** Puerta de un piso (la que está en el pasillo). */
 public class PuertaPiso extends Puerta {
     private final int numeroPiso;
 
@@ -8,19 +8,20 @@ public class PuertaPiso extends Puerta {
         this.numeroPiso = numeroPiso;
     }
 
+    public int getNumeroPiso() {
+        return numeroPiso;
+    }
+
     @Override
     public void abrir() {
         abierta = true;
-        System.out.println("   Puerta del piso " + numeroPiso + ": se abre");
     }
 
+    /** Cierra solo si no hay obstáculo. */
     @Override
     public void cerrar() {
-        abierta = false;
-        System.out.println("   Puerta del piso " + numeroPiso + ": se cierra");
-    }
-
-    public int getNumeroPiso() {
-        return numeroPiso;
+        if (!getSensor().detectarObstaculo()) {
+            abierta = false;
+        }
     }
 }

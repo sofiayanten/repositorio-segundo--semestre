@@ -3,142 +3,150 @@ package Ascensor;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Un ascensor. Se mueve con la estrategia LOOK: sigue en su sentido mientras haya destinos adelante. */
+/** Una cabina de ascensor: se mueve, decide dónde parar y maneja su puerta y sus botones. */
 public class Ascensor {
     private final int id;
-    private final int numeroPisos;
-    private EstadoAscensor estado = EstadoAscensor.DETENIDO;
-    private Direccion direccion = Direccion.DETENIDO;
-    private int pisoActual = 1;
+    private Estado estado = Estado.DETENIDO;
+    private Direccion direccion = Direccion.NINGUNA;
+    private int pisoActual = 0;
     private final List<Integer> destinos = new ArrayList<>();
     private final PuertaAscensor puerta = new PuertaAscensor();
-    private final List<BotonAscensor> botones = new ArrayList<>();
+    private final BotonAscensor[] botones;
 
-    public Ascensor(int id, int numeroPisos) {
+    public Ascensor(int id, int totalPisos) {
         this.id = id;
-        this.numeroPisos = numeroPisos;
-        for (int piso = 1; piso <= numeroPisos; piso++) {
-            botones.add(new BotonAscensor(piso, this));
+        this.botones = new BotonAscensor[totalPisos];
+        for (int i = 0; i < totalPisos; i++) {
+            botones[i] = new BotonAscensor(i);
         }
     }
 
-    /** Avanza UN piso en el sentido actual (solo si la puerta está cerrada). */
-    public void mover() {
-        if (estado == EstadoAscensor.FUERA_DE_SERVICIO || puerta.estaAbierta() || direccion == Direccion.DETENIDO) {
+    /** Un pasajero presiona un botón dentro de la cabina. */
+    public void presionarBoton(int piso) {
+        if (estado == Estado.FALLA) {
             return;
         }
-        int siguiente = pisoActual + (direccion == Direccion.SUBE ? 1 : -1);
-        if (siguiente < 1 || siguiente > numeroPisos) {
-            return;
-        }
-        pisoActual = siguiente;
-        estado = EstadoAscensor.EN_MOVIMIENTO;
-        System.out.println("   Ascensor " + id + " " + direccion + " -> piso " + pisoActual);
+        agregarDestino(piso);
+        botones[piso].presionar();
     }
 
-    /** Debe parar si el piso actual está entre sus destinos. */
-    public boolean debeParar() {
-        return destinos.contains(pisoActual);
-    }
-
-    /** Llegó a un destino: lo quita de la lista, apaga el botón de cabina y abre la puerta. */
-    public void atenderPiso() {
-        destinos.remove(Integer.valueOf(pisoActual));
-        botones.get(pisoActual - 1).apagarIndicador();
-        estado = EstadoAscensor.PUERTAS_ABIERTAS;
-        System.out.println("   Ascensor " + id + " llega al piso " + pisoActual);
-        puerta.abrir();
-    }
-
-    /** LOOK: solo invierte el sentido cuando ya no quedan destinos adelante. */
-    public void cambiarDireccion() {
-        boolean hayArriba = hayDestinosArriba();
-        boolean hayAbajo = hayDestinosAbajo();
-        if (direccion == Direccion.SUBE) {
-            if (!hayArriba) {
-                direccion = hayAbajo ? Direccion.BAJA : Direccion.DETENIDO;
-            }
-        } else if (direccion == Direccion.BAJA) {
-            if (!hayAbajo) {
-                direccion = hayArriba ? Direccion.SUBE : Direccion.DETENIDO;
-            }
-        } else {
-            direccion = hayArriba ? Direccion.SUBE : (hayAbajo ? Direccion.BAJA : Direccion.DETENIDO);
-        }
-    }
-
-    // ---- Métodos de apoyo (no aparecen en el diagrama) ----
-
+    /** Agrega un piso a la lista de paradas pendientes (sin repetir). */
     public void agregarDestino(int piso) {
-        if (piso < 1 || piso > numeroPisos) {
-            throw new IllegalArgumentException("Piso fuera de rango: " + piso);
+        if (piso < 0 || piso >= botones.length) {
+            throw new IllegalArgumentException("Piso inexistente: " + piso);
         }
         if (!destinos.contains(piso)) {
             destinos.add(piso);
         }
     }
 
-    /** Un pasajero dentro de la cabina presiona el botón de un piso. */
-    public void presionarBoton(int piso) {
-        if (piso < 1 || piso > numeroPisos) {
-            throw new IllegalArgumentException("Piso fuera de rango: " + piso);
+    /** Un "paso" del ascensor: o atiende un piso, o se mueve un piso. */
+    public void mover() {
+        if (estado == Estado.FALLA) {
+            return;
         }
-        botones.get(piso - 1).presionar();
+        if (destinos.isEmpty()) {
+            estado = Estado.DETENIDO;
+            direccion = Direccion.NINGUNA;
+            return;
+        }
+        if (debeParar()) {
+            atenderPiso();
+            return;
+        }
+        if (!hayDestinosEnDireccion()) {
+            cambiarDireccion(); // solo cambia cuando ya no hay pedidos en su sentido
+        }
+        if (direccion == Direccion.SUBE) {
+            pisoActual++;
+            estado = Estado.SUBIENDO;
+        } else {
+            pisoActual--;
+            estado = Estado.BAJANDO;
+        }
     }
 
-    private boolean hayDestinosArriba() {
+    /** ¿El piso donde está es una de sus paradas? */
+    public boolean debeParar() {
+        return destinos.contains(pisoActual);
+    }
+
+    /** Llegó a una parada: la quita de la lista, apaga el botón y maneja la puerta. */
+    public void atenderPiso() {
+        destinos.remove(Integer.valueOf(pisoActual));
+        botones[pisoActual].apagarIndicador();
+        puerta.abrir();
+        puerta.cierreAutomatico();
+        estado = Estado.ATENDIENDO;
+    }
+
+    /** Invierte el sentido; si estaba quieto, elige el sentido hacia la primera parada. */
+    public void cambiarDireccion() {
+        if (direccion == Direccion.SUBE) {
+            direccion = Direccion.BAJA;
+        } else if (direccion == Direccion.BAJA) {
+            direccion = Direccion.SUBE;
+        } else {
+            direccion = destinos.get(0) > pisoActual ? Direccion.SUBE : Direccion.BAJA;
+        }
+    }
+
+    /** ¿Quedan paradas más adelante en el sentido actual? */
+    private boolean hayDestinosEnDireccion() {
         for (int d : destinos) {
-            if (d > pisoActual) {
+            if (direccion == Direccion.SUBE && d > pisoActual) {
+                return true;
+            }
+            if (direccion == Direccion.BAJA && d < pisoActual) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean hayDestinosAbajo() {
-        for (int d : destinos) {
-            if (d < pisoActual) {
-                return true;
-            }
+    /** Emergencia: se detiene, se cancelan los pedidos y se abre la puerta. */
+    public void detenerPorFalla() {
+        estado = Estado.FALLA;
+        direccion = Direccion.NINGUNA;
+        destinos.clear();
+        puerta.abrir();
+    }
+
+    /** Botón "mantener puertas abiertas" de la cabina. */
+    public void mantenerPuertas(boolean activo) {
+        puerta.mantenerAbiertas(activo);
+        if (activo) {
+            puerta.abrir();
+        } else {
+            puerta.cierreAutomatico();
         }
-        return false;
+    }
+
+    public boolean estaEnFalla() {
+        return estado == Estado.FALLA;
     }
 
     public int getId() {
         return id;
     }
 
-    public int getPisoActual() {
-        return pisoActual;
-    }
-
-    public EstadoAscensor getEstado() {
+    public Estado getEstado() {
         return estado;
-    }
-
-    public void setEstado(EstadoAscensor estado) {
-        this.estado = estado;
     }
 
     public Direccion getDireccion() {
         return direccion;
     }
 
+    public int getPisoActual() {
+        return pisoActual;
+    }
+
     public List<Integer> getDestinos() {
-        return List.copyOf(destinos);
+        return destinos;
     }
 
     public PuertaAscensor getPuerta() {
         return puerta;
-    }
-
-    public List<BotonAscensor> getBotones() {
-        return List.copyOf(botones);
-    }
-
-    @Override
-    public String toString() {
-        return "Ascensor " + id + " [piso " + pisoActual + ", " + direccion + ", " + estado
-                + ", destinos=" + destinos + "]";
     }
 }

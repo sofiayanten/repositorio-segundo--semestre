@@ -1,49 +1,30 @@
 package Ascensor;
 
-/** Puerta de la cabina: se cierra sola tras unos pasos, respeta el sensor y puede mantenerse abierta. */
+/** Puerta de la cabina. Tiene la opción de "mantener puertas abiertas". */
 public class PuertaAscensor extends Puerta {
-    private static final int PASOS_DE_ESPERA = 2;
-
     private boolean mantenerAbierta;
-    private int pasosAbierta;
 
     @Override
     public void abrir() {
         abierta = true;
-        pasosAbierta = 0;
-        System.out.println("   Puerta del ascensor: se abre");
     }
 
+    /** Cierra solo si el sensor NO detecta un obstáculo. */
     @Override
     public void cerrar() {
-        if (mantenerAbierta) {
-            System.out.println("   Puerta del ascensor: se mantiene abierta (modo manual)");
-            return;
+        if (!getSensor().detectarObstaculo()) {
+            abierta = false;
         }
-        if (getSensor().detectarObstaculo()) {
-            System.out.println("   Sensor: hay un obstaculo, la puerta no se cierra");
-            return;
-        }
-        abierta = false;
-        pasosAbierta = 0;
-        System.out.println("   Puerta del ascensor: se cierra");
     }
 
-    /** Se llama en cada paso de la simulación: cuando se cumple la espera, intenta cerrar. */
+    /** Cierre automático: respeta el botón "mantener puertas abiertas". */
     public void cierreAutomatico() {
-        if (!abierta) {
-            return;
-        }
-        pasosAbierta++;
-        if (pasosAbierta >= PASOS_DE_ESPERA) {
+        if (!mantenerAbierta) {
             cerrar();
         }
     }
 
     public void mantenerAbiertas(boolean activo) {
-        this.mantenerAbierta = activo;
-        if (!activo) {
-            pasosAbierta = 0;
-        }
+        mantenerAbierta = activo;
     }
 }

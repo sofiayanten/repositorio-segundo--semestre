@@ -1,6 +1,6 @@
 package Ascensor;
 
-/** Sentido de movimiento del ascensor o sentido de un llamado desde un piso. */
+/** Sentidos posibles: de una solicitud (SUBE/BAJA) o del movimiento del ascensor. */
 public enum Direccion {
-    SUBE, BAJA, DETENIDO
+    SUBE, BAJA, NINGUNA
 }

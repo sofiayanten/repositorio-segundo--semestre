@@ -1,32 +1,24 @@
 package Ascensor;
 
-/**
- * Sensor de obstáculos de una puerta.
- * Si detecta obstáculo varias lecturas seguidas, se considera que la puerta está bloqueada (falla).
- */
+/** Sensor de seguridad de una puerta: detecta obstáculos y fallas. */
 public class SensorPuerta {
-    private static final int LECTURAS_PARA_FALLA = 3;
-
     private boolean obstaculo;
-    private int lecturasConObstaculo;
+    private boolean falla; // agregado al diagrama para poder simular fallas
 
-    /** Simula que hay (o no) algo atravesado en la puerta. */
-    public void setObstaculo(boolean obstaculo) {
-        this.obstaculo = obstaculo;
-    }
-
-    /** Lee el sensor y cuenta cuántas lecturas seguidas han detectado obstáculo. */
     public boolean detectarObstaculo() {
-        if (obstaculo) {
-            lecturasConObstaculo++;
-        } else {
-            lecturasConObstaculo = 0;
-        }
         return obstaculo;
     }
 
-    /** Hay falla si el obstáculo se detectó en LECTURAS_PARA_FALLA lecturas seguidas. */
     public boolean verificarFalla() {
-        return lecturasConObstaculo >= LECTURAS_PARA_FALLA;
+        return falla;
+    }
+
+    // Métodos para simular el hardware (en un sistema real vendrían del sensor físico)
+    public void setObstaculo(boolean valor) {
+        obstaculo = valor;
+    }
+
+    public void setFalla(boolean valor) {
+        falla = valor;
     }
 }

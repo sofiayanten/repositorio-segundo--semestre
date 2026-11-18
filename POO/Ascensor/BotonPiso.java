@@ -1,6 +1,6 @@
 package Ascensor;
 
-/** Botón de llamado en un piso (sube o baja). El aviso al control lo hace Piso.solicitar(). */
+/** Botón de un piso: pide el ascensor para subir o para bajar. */
 public class BotonPiso extends Boton {
     private final int numeroPiso;
     private final Direccion sentido;
@@ -10,17 +10,17 @@ public class BotonPiso extends Boton {
         this.sentido = sentido;
     }
 
-    @Override
-    public void presionar() {
-        System.out.println("   Boton del piso " + numeroPiso + " (" + sentido + ") presionado");
-        encenderIndicador();
-    }
-
     public int getNumeroPiso() {
         return numeroPiso;
     }
 
     public Direccion getSentido() {
         return sentido;
+    }
+
+    @Override
+    public void presionar() {
+        System.out.println(" Boton del piso " + numeroPiso + ": llamar para " + sentido);
+        encenderIndicador();
     }
 }
